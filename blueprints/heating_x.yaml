@@ -228,7 +228,7 @@ variables:
   local_manual_override_timer: !input manual_override_timer
   local_maximum_thermostat_temperature: !input maximum_thermostat_temperature
   local_minimum_thermostat_temperature: !input minimum_thermostat_temperature
-  local_thermostat_set_temperature: !input thermostat_set_temperature_sensors
+  local_thermostat_set_temperature: '{{ trigger.entity_id | default("unknown") }}'
   local_zone_calendar: !input zone_calendar
   local_zone_occupancy_sensors: !input zone_occupancy_sensors
 
