@@ -1,0 +1,35 @@
+{% for zone in config.zones %}
+### {{ zone.heating_zone_friendly_name }}
+{{ zone.heating_zone_entity_name }}_manual_override_timer:
+  name: {{ zone.heating_zone_friendly_name }} manual override timer
+  duration: "00:00:00"
+  restore: true
+  icon: mdi:av-timer
+
+{{ zone.heating_zone_entity_name }}_warmup_timer:
+  name: {{ zone.heating_zone_friendly_name }} warmup timer
+  duration: "00:00:00"
+  restore: true
+  icon: mdi:av-timer
+
+{{ zone.heating_zone_entity_name }}_door_or_window_open_timer:
+  name: {{ zone.heating_zone_friendly_name }} door or window open timer
+  duration: "00:00:00"
+  restore: true
+  icon: mdi:av-timer
+
+{{ zone.heating_zone_entity_name }}_room_unoccupancy_timer:
+  name: {{ zone.heating_zone_friendly_name }} room unoccupancy timer
+  duration: "00:00:00"
+  restore: true
+  icon: mdi:av-timer
+
+{{ zone.heating_zone_entity_name }}_echoblock_timer:
+  name: {{ zone.heating_zone_friendly_name }} echoblock timer
+  duration: "00:00:00"
+  restore: true
+  icon: mdi:av-timer
+{% if not loop.last %}
+
+{% endif %}
+{% endfor -%}

@@ -1,0 +1,17 @@
+{% for zone in config.zones %}
+### {{ zone.heating_zone_friendly_name }}
+{{ zone.heating_zone_entity_name }}_event_start:
+  name: {{ zone.heating_zone_friendly_name }} event start
+  has_date: true
+  has_time: true
+  icon: mdi:clock-outline
+
+{{ zone.heating_zone_entity_name }}_event_end:
+  name: {{ zone.heating_zone_friendly_name }} event end
+  has_date: true
+  has_time: true
+  icon: mdi:clock-outline
+{% if not loop.last %}
+
+{% endif %}
+{% endfor -%}

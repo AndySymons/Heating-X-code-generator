@@ -1,0 +1,15 @@
+dashboard:
+  eco_temperature: 5
+  disable_window: true
+  disable_summer: true
+  disable_eco: true
+  disable_heat: true
+  disable_off: true
+temperature:
+  max: 40
+  min: 0
+  step: 1
+zones:
+  - heating_zone_entity_name: bathroom
+    heating_zone_friendly_name: Bathroom
+    thermostat_entity_name: climate.bathroom

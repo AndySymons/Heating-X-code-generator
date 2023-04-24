@@ -1,0 +1,19 @@
+{% for zone in config.zones %}
+### {{ zone.heating_zone_friendly_name }}
+- sensor:
+  - name: {{ zone.heating_zone_entity_name }}_target_temperature
+    unique_id: "{{ zone.target_temperature_unique_id or generate_uuid() }}"
+    unit_of_measurement: 'C'
+    icon: mdi:thermometer
+    state: "{% raw %}{{{% endraw %} state_attr('climate.{{ zone.thermostat_entity_name }}', 'temperature') {% raw %}}}{% endraw %}"
+
+- sensor:
+  - name: {{ zone.heating_zone_entity_name }}_current_temperature
+    unique_id: "{{ zone.current_temperature_unique_id or generate_uuid() }}"
+    unit_of_measurement: 'C'
+    icon: mdi:thermometer
+    state: "{% raw %}{{{% endraw %} state_attr('climate.{{ zone.thermostat_entity_name }}', 'current_temperature') {% raw %}}}{% endraw %}"
+{% if not loop.last %}
+
+{% endif %}
+{% endfor -%}
