@@ -16,7 +16,7 @@ cards:
         disable_eco: {{ (config.dashboard.disable_eco or True) | lower }}
         disable_heat: {{ (config.dashboard.disable_heat or True) | lower }}
         disable_off: {{ (config.dashboard.disable_off or True) | lower }}
-        set_current_as_main: false
+        set_current_as_main: {{ (config.dashboard.set_current_as_main or False) | lower }}
       - type: markdown
         content: |-
           **Schedule**: {% raw %}{{{% endraw %} states('input_text.{{ zone.heating_zone_entity_name }}_event_name') {% raw %}}}{% endraw %}
