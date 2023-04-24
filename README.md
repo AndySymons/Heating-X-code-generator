@@ -1,6 +1,6 @@
-# Heating-X-code-generator
+# HeatingX
 
-Use Jinja to create YAML files for all the template sensors and helpers required for a complete home installation of Heating X zones.
+Use Jinja to create YAML files for all the template sensors and helpers required for a complete home installation of HeatingX zones.
 
 To get started:
 1. Make sure you have Python 3 installed.
