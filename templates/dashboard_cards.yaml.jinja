@@ -1,7 +1,7 @@
+{% for zone in config.zones %}
+### {{ zone.heating_zone_friendly_name }}
 type: vertical-stack
 cards:
-  {% for zone in config.zones %}
-  ### {{ zone.heating_zone_friendly_name }}
   - type: custom:mushroom-title-card
     title: {{ zone.heating_zone_entity_name }}
   - square: false
@@ -22,7 +22,8 @@ cards:
           **Schedule**: {% raw %}{{{% endraw %} states('input_text.{{ zone.heating_zone_entity_name }}_event_name') {% raw %}}}{% endraw %}
 
           **Status**: *{% raw %}{{{% endraw %} states('input_text.{{ zone.heating_zone_entity_name }}_setting_reason') {% raw %}}}{% endraw %}*
-  {% if not loop.last %}
+{% if not loop.last %}
 
-  {% endif %}
-  {% endfor %}
+---
+{% endif %}
+{% endfor %}
