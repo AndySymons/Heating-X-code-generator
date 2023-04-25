@@ -241,6 +241,7 @@ trigger:
   - platform: state
     entity_id: !input manual_override_timer
     from: active
+    not_to: active
     id: manual_override_end
 
   # 5. Zone becomes unoccupied: sensor available and off (clear)
@@ -332,7 +333,7 @@ action:
         sequence:
           - service: input_number.set_value
             data:
-              value: 0
+              value: 0  # This value should never be used to set the thermostat.
             target:
               entity_id: !input manual_temperature
       #
