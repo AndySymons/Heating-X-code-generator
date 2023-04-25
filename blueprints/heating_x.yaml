@@ -230,11 +230,13 @@ trigger:
 
   # 3. Change in any one of the thermostat set temperatures
   - platform: state
-    entity_id: !input thermostat_set_temperature_sensors
     attribute: temperature
+    entity_id: !input thermostat_set_temperature_sensors
     for:
       seconds: 10
     id: set_temperature_change
+    variables:
+        set_temperature: "{{ state_attr(trigger.entity_id, 'temperature') }}"
 
   # 4. End of manual override (timer idle, paused, unknown, or unavailable)
   - platform: event
@@ -311,7 +313,7 @@ action:
             state: idle
           #ignore if same value as before (e.g. triggered by template reload)
           - condition: template
-            value_template: "{{ not states(local_thermostat_set_temperature) == states(local_manual_temperature) }}"
+            value_template: "{{ trigger.set_temperature != states(local_manual_temperature) }}"
         sequence:
           - service: timer.start
             data:
