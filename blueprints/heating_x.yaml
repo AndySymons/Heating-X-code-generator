@@ -16,14 +16,6 @@ blueprint:
           domain: climate
           multiple: true
 
-    thermostat_set_temperature_sensors:
-      name: DEVICE ENTITY - Thermostat set temperature
-      description: The (template) sensors that read the set temperature from the specified thermostats
-      selector:
-        entity:
-          domain: sensor
-          multiple: true
-
     door_or_window_open_sensors:
       name: DEVICE ENTITY - Door or window open sensors
       description: Zero or more sensors that detect whether a door or window is open
@@ -231,9 +223,7 @@ trigger:
   # 3. Change in any one of the thermostat set temperatures
   - platform: state
     attribute: temperature
-    entity_id: !input thermostat_set_temperature_sensors
-    for:
-      seconds: 10
+    entity_id: !input thermostat_controls
     id: set_temperature_change
     variables:
         set_temperature: "{{ state_attr(trigger.entity_id, 'temperature') }}"
@@ -324,7 +314,7 @@ action:
           # Save the manual setting most recently received (this trigger)
           - service: input_number.set_value
             data:
-              value: "{{ states(local_thermostat_set_temperature) }}"
+              value: "{{ trigger.set_temperature }}"
             target:
               entity_id: !input manual_temperature
       #
