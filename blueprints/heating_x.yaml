@@ -199,7 +199,6 @@ variables:
   local_manual_override_timer: !input manual_override_timer
   local_maximum_thermostat_temperature: !input maximum_thermostat_temperature
   local_minimum_thermostat_temperature: !input minimum_thermostat_temperature
-  local_thermostat_set_temperature: '{{ trigger.entity_id | default("unknown") }}'
   local_zone_calendar: !input zone_calendar
   local_zone_occupancy_sensors: !input zone_occupancy_sensors
 
@@ -226,7 +225,7 @@ trigger:
     entity_id: !input thermostat_controls
     id: set_temperature_change
     variables:
-        set_temperature: "{{ state_attr(trigger.entity_id, 'temperature') }}"
+      set_temperature: "{{ state_attr(trigger.entity_id, 'temperature') }}"
 
   # 4. End of manual override (timer idle, paused, unknown, or unavailable)
   - platform: event
@@ -429,7 +428,7 @@ action:
           - service: input_number.set_value
             data:
               value: >-
-                {% set description = trigger.calendar_event.description ) %} {# copy description field #}
+                {% set description = trigger.calendar_event.description %} {# copy description field #}
                 {% if not description.split('#') | count >= 3 %}
                   {% set temperature_error_code = -4 %} {# no number field #}
                 {% elif not description.split('#')[1] | is_number %}
