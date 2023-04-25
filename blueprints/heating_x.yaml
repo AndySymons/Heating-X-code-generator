@@ -236,10 +236,12 @@ trigger:
     id: set_temperature_change
 
   # 4. End of manual override (timer idle, paused, unknown, or unavailable)
-  - platform: state
-    entity_id: !input manual_override_timer
-    from: active
-    not_to: active
+  - platform: event
+    event_type:
+      - timer.finished
+      - timer.cancelled
+    event_data:
+      entity_id: !input manual_override_timer
     id: manual_override_end
 
   # 5. Zone becomes unoccupied: sensor available and off (clear)
