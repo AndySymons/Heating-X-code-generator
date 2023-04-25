@@ -231,6 +231,7 @@ trigger:
   # 3. Change in any one of the thermostat set temperatures
   - platform: state
     entity_id: !input thermostat_set_temperature_sensors
+    attribute: temperature
     for:
       seconds: 10
     id: set_temperature_change
