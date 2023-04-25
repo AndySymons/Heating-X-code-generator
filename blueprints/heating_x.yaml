@@ -193,7 +193,7 @@ blueprint:
 mode: queued # use all triggers but avoid conflicting states
 
 ## ----------------------------------------------------------------------------
-## LOCAL VARİABLES
+## LOCAL VARIABLES
 ## needed to capture global variable values for use in templates
 ## ----------------------------------------------------------------------------
 
