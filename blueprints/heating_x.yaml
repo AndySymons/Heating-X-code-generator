@@ -216,19 +216,17 @@ variables:
 ## ----------------------------------------------------------------------------
 
 trigger:
-  # 1. Calendar state to on (active event)
-  # (Similar to event start but can be around 30 seconds later)
-  - platform: state
+  # 1. Calendar event starts
+  - platform: calendar
+    event: start
     entity_id: !input zone_calendar
-    to: "on"
-    id: calendar_state_to_on
+    id: calendar_event_start
 
-  # 2. Calendar state to off, unknown, or unavailable (no active event)
-  # (Similar to event end but can be around 30 seconds later)
-  - platform: state
+  # 2. Calendar event ends
+  - platform: calendar
+    event: end
     entity_id: !input zone_calendar
-    from: "on"
-    id: calendar_state_to_off
+    id: calendar_event_end
 
   # 3. Change in any one of the thermostat set temperatures
   - platform: state
