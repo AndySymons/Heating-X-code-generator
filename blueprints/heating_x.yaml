@@ -397,85 +397,87 @@ action:
               entity_id: !input unoccupancy_timer
 
   ## ----------------------------------------------------------------------------
-  ## ACTIONS STEP 2 -- REFRESH THE CALENDAR EVENT HELPERS
+  ## ACTIONS STEP 2 -- REFRESH THE CALENDAR EVENT HELPERS (IF NEEDED)
   ## ----------------------------------------------------------------------------
 
-  - if:
-      - condition: template
-        value_template: |
-          {{ states(local_zone_calendar) == 'on' }}
-    then:
-      - service: input_text.set_value
-        data:
-          value: "{{ state_attr(local_zone_calendar, 'message' ) }}"
-        target:
-          entity_id: !input event_name
-      - service: input_datetime.set_datetime
-        data:
-          datetime: "{{ state_attr(local_zone_calendar, 'start_time' ) }}"
-        target:
-          entity_id: !input event_start
-      - service: input_datetime.set_datetime
-        data:
-          datetime: "{{ state_attr(local_zone_calendar, 'end_time' ) }}"
-        target:
-          entity_id: !input event_end
-      - service: input_text.set_value
-        data:
-          value: "{{ state_attr(local_zone_calendar, 'description' ) }}"
-        target:
-          entity_id: !input event_description
-      - service: input_number.set_value
-        data:
-          value: >-
-            {% set description = state_attr(local_zone_calendar, 'description' ) %} {# copy description field #}
-            {% if not description.split('#') | count >= 3 %}
-            {% set temperature_error_code = -4 %} {# no number field #}
-            {% elif not description.split('#')[1] | is_number %}
-            {% set temperature_error_code = -3 %} {# not a number #}
-            {% elif not (description.split('#')[1] | float(0)) >= local_minimum_thermostat_temperature %}
-            {% set temperature_error_code = -2 %} {# number too small #}
-            {% elif not (description.split('#')[1] | float(0)) <= local_maximum_thermostat_temperature %}
-            {% set temperature_error_code = -1 %} {# number too big #}
-
-            {% else %}
-            {% set temperature_error_code = 0 %}
-            {% endif %}
-            {% if temperature_error_code == 0 %}
-              {{ '%0.1f' | format(description.split('#')[1]  | float(0)) }}
-            {% else %}
-              {{ local_frost_setting }}
-            {% endif %}
-
-        target:
-          entity_id: !input event_temperature
-
-    else: # no  currently active event
-      - service: input_text.set_value
-        data:
-          value: (none)
-        target:
-          entity_id: !input event_name
-      - service: input_datetime.set_datetime
-        data:
-          datetime: "3000-01-01T00:00:00"
-        target:
-          entity_id: !input event_start
-      - service: input_datetime.set_datetime
-        data:
-          datetime: "3000-01-01T00:00:00"
-        target:
-          entity_id: !input event_end
-      - service: input_text.set_value
-        data:
-          value: (none)
-        target:
-          entity_id: !input event_description
-      - service: input_number.set_value
-        data:
-          value: !input frost_setting
-        target:
-          entity_id: !input event_temperature
+  - choose:
+      ### Set the calendar event helpers to the current event. ###
+      - conditions:
+          - condition: trigger
+            id: calendar_event_start
+        sequence:
+          - service: input_text.set_value
+            data:
+              value: "{{ trigger.calendar_event.summary }}"
+            target:
+              entity_id: !input event_name
+          - service: input_datetime.set_datetime
+            data:
+              datetime: "{{ trigger.calendar_event.start }}"
+            target:
+              entity_id: !input event_start
+          - service: input_datetime.set_datetime
+            data:
+              datetime: "{{ trigger.calendar_event.end }}"
+            target:
+              entity_id: !input event_end
+          - service: input_text.set_value
+            data:
+              value: "{{ trigger.calendar_event.description }}"
+            target:
+              entity_id: !input event_description
+          - service: input_number.set_value
+            data:
+              value: >-
+                {% set description = trigger.calendar_event.description ) %} {# copy description field #}
+                {% if not description.split('#') | count >= 3 %}
+                  {% set temperature_error_code = -4 %} {# no number field #}
+                {% elif not description.split('#')[1] | is_number %}
+                  {% set temperature_error_code = -3 %} {# not a number #}
+                {% elif not (description.split('#')[1] | float(0)) >= local_minimum_thermostat_temperature %}
+                  {% set temperature_error_code = -2 %} {# number too small #}
+                {% elif not (description.split('#')[1] | float(0)) <= local_maximum_thermostat_temperature %}
+                  {% set temperature_error_code = -1 %} {# number too big #}
+                {% else %}
+                  {% set temperature_error_code = 0 %}
+                {% endif %}
+                {% if temperature_error_code == 0 %}
+                  {{ '%0.1f' | format(description.split('#')[1]  | float(0)) }}
+                {% else %}
+                  {{ local_frost_setting }}
+                {% endif %}
+            target:
+              entity_id: !input event_temperature
+      ### Reset the calendar event helpers when the event ends. ###
+      - conditions:
+          - condition: trigger
+            id: calendar_event_end
+        sequence:
+          - service: input_text.set_value
+            data:
+              value: (none)
+            target:
+              entity_id: !input event_name
+          - service: input_datetime.set_datetime
+            data:
+              datetime: "3000-01-01T00:00:00"
+            target:
+              entity_id: !input event_start
+          - service: input_datetime.set_datetime
+            data:
+              datetime: "3000-01-01T00:00:00"
+            target:
+              entity_id: !input event_end
+          - service: input_text.set_value
+            data:
+              value: (none)
+            target:
+              entity_id: !input event_description
+          - service: input_number.set_value
+            data:
+              value: !input frost_setting
+            target:
+              entity_id: !input event_temperature
 
   ## ----------------------------------------------------------------------------
   ## ACTIONS STEP 3 -- DETERMINE THE REQUIRED TEMPERATURE AND THE REASON
