@@ -207,19 +207,13 @@ variables:
 ## ----------------------------------------------------------------------------
 
 trigger:
-  # 1. Calendar event starts
+  # 1. Calendar event starts or ends
   - platform: calendar
     event: start
     entity_id: !input zone_calendar
-    id: calendar_event_start
+    id: calendar_event
 
-  # 2. Calendar event ends
-  - platform: calendar
-    event: end
-    entity_id: !input zone_calendar
-    id: calendar_event_end
-
-  # 3. Change in any one of the thermostat set temperatures
+  # 2. Change in any one of the thermostat set temperatures
   - platform: state
     attribute: temperature
     entity_id: !input thermostat_controls
@@ -227,7 +221,7 @@ trigger:
     variables:
       set_temperature: "{{ state_attr(trigger.entity_id, 'temperature') }}"
 
-  # 4. End of manual override (timer idle, paused, unknown, or unavailable)
+  # 3. End of manual override (timer idle, paused, unknown, or unavailable)
   - platform: event
     event_type:
       - timer.finished
@@ -236,7 +230,7 @@ trigger:
       entity_id: !input manual_override_timer
     id: manual_override_end
 
-  # 5. Zone becomes unoccupied: sensor available and off (clear)
+  # 4. Zone becomes unoccupied: sensor available and off (clear)
   - platform: state
     entity_id: !input zone_occupancy_sensors
     to: "off"
@@ -244,7 +238,7 @@ trigger:
       seconds: 10
     id: zone_unoccupied
 
-  # 6. Zone becomes occupied: sensor 'detected' (on), 'unknown', or 'unavailable'
+  # 5. Zone becomes occupied: sensor 'detected' (on), 'unknown', or 'unavailable'
   - platform: state
     entity_id: !input zone_occupancy_sensors
     from: "off"
@@ -252,7 +246,7 @@ trigger:
       seconds: 10
     id: zone_occupied
 
-  # 7. A door or window is opened
+  # 6. A door or window is opened
   - platform: state
     entity_id: !input door_or_window_open_sensors
     to: "on"
@@ -260,7 +254,7 @@ trigger:
       seconds: 10
     id: door_or_window_opened
 
-  # 8. A doors or windows is closed, or becomes 'unknown' or 'unavailable'
+  # 7. A doors or windows is closed, or becomes 'unknown' or 'unavailable'
   - platform: state
     entity_id: !input door_or_window_open_sensors
     from: "on"
@@ -268,19 +262,19 @@ trigger:
       seconds: 10
     id: doors_and_windows_closed
 
-  # 9. Door or window open timer finished (time to turn off the heating)
+  # 8. Door or window open timer finished (time to turn off the heating)
   - platform: state
     entity_id: !input door_or_window_open_timer
     from: active
     id: door_or_window_open_timer_end
 
-  # 10. Unoccupancy timer finished (time to turn off the heating)
+  # 9. Unoccupancy timer finished (time to turn off the heating)
   - platform: state
     entity_id: !input unoccupancy_timer
     from: active
     id: unoccupancy_timer_end
 
-  # 13. Refresh every minute
+  # 10. Refresh every 2 minutes
   - platform: time_pattern
     seconds: "02" # after the now() time is set at seconds 00
 
@@ -403,7 +397,9 @@ action:
       ### Set the calendar event helpers to the current event. ###
       - conditions:
           - condition: trigger
-            id: calendar_event_start
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'start' }}"
         sequence:
           - service: input_text.set_value
             data:
@@ -450,7 +446,9 @@ action:
       ### Reset the calendar event helpers when the event ends. ###
       - conditions:
           - condition: trigger
-            id: calendar_event_end
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'end' }}"
         sequence:
           - service: input_text.set_value
             data:
