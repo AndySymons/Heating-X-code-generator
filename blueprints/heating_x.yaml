@@ -71,13 +71,6 @@ blueprint:
         entity:
           domain: input_number
 
-    manual_temperature:
-      name: HELPER - Manual temperature
-      description: The global variable (helper) to hold the temperature specified by manual control of the device or the dashboard
-      selector:
-        entity:
-          domain: input_number
-
     setting_reason:
       name: HELPER - Setting reason
       description: The global variable (helper) into which the automation writes the reason for the current setting (for use on a dashboard)
@@ -170,7 +163,6 @@ variables:
   event_name: !input event_name
   event_temperature: !input event_temperature
   frost_setting: !input frost_setting
-  manual_temperature: !input manual_temperature
   manual_override_timer: !input manual_override_timer
   maximum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'max_temp') | min }}"
   minimum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'min_temp') | max }}"
@@ -265,34 +257,15 @@ action:
           - condition: state
             entity_id: !input echoblock_timer
             state: idle
-          #ignore if same value as before (e.g. triggered by template reload)
+          # ignore if same value as before (e.g. triggered by template reload)
           - condition: template
-            value_template: "{{ trigger.set_temperature != states(manual_temperature) }}"
+            value_template: "{{ set_temperature != trigger.from_state.temperature }}"
         sequence:
-          # Save the manual setting most recently received (this trigger)
-          - service: input_number.set_value
-            data:
-              value: "{{ trigger.set_temperature }}"
-            target:
-              entity_id: !input manual_temperature
-
           - service: timer.start
             data:
               duration: !input manual_override_period
             target:
               entity_id: !input manual_override_timer
-      #
-      # b. Manual override end
-      #
-      - conditions:
-          - condition: trigger
-            id: manual_override_end
-        sequence:
-          - service: input_number.set_value
-            data:
-              value: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
-            target:
-              entity_id: !input manual_temperature
       #
       # c. Door or window opened - start timer
       #
@@ -526,12 +499,12 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ states(manual_temperature) }}"
+              temperature: "{{ set_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
             data:
-              value: "Set manually to {{ states(manual_temperature) }}. Time left {{ ( as_timestamp(state_attr(manual_override_timer,'finishes_at'))-as_timestamp(now()) ) |  timestamp_custom('%H:%M', False, 0) }}"
+              value: "Set manually to {{ set_temperature }}. Time left {{ ( as_timestamp(state_attr(manual_override_timer,'finishes_at'))-as_timestamp(now()) ) |  timestamp_custom('%H:%M', False, 0) }}"
             target:
               entity_id: !input setting_reason
 
