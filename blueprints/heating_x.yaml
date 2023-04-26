@@ -274,10 +274,6 @@ trigger:
     from: active
     id: unoccupancy_timer_end
 
-  # 10. Refresh every 2 minutes
-  - platform: time_pattern
-    seconds: "02" # after the now() time is set at seconds 00
-
 ## ----------------------------------------------------------------------------
 ## ACTIONS STEP 1 -- SET THE STATE VARİABLES
 ## ----------------------------------------------------------------------------
