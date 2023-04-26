@@ -298,7 +298,7 @@ action:
         sequence:
           - service: input_number.set_value
             data:
-              value: 0  # This value should never be used to set the thermostat.
+              value: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input manual_temperature
       #
@@ -418,7 +418,7 @@ action:
                 {% if temperature_error_code == 0 %}
                   {{ '%0.1f' | format(description.split('#')[1]  | float(0)) }}
                 {% else %}
-                  {{ frost_setting }}
+                  {{ [frost_setting, minimum_thermostat_temperature] | max }}
                 {% endif %}
             target:
               entity_id: !input event_temperature
@@ -451,7 +451,7 @@ action:
               entity_id: !input event_description
           - service: input_number.set_value
             data:
-              value: !input frost_setting
+              value: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input event_temperature
 
@@ -470,7 +470,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -489,7 +489,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -528,7 +528,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -549,7 +549,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -570,7 +570,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -591,7 +591,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -627,7 +627,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -650,7 +650,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -667,7 +667,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: !input frost_setting
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -680,7 +680,7 @@ action:
     default:
       - service: climate.set_temperature
         data:
-          temperature: !input frost_setting
+          temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
         target:
           entity_id: !input thermostat_controls
       - service: input_text.set_value
