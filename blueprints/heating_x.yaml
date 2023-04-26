@@ -190,17 +190,17 @@ mode: queued # use all triggers but avoid conflicting states
 ## ----------------------------------------------------------------------------
 
 variables:
-  local_door_or_window_open_sensors: !input door_or_window_open_sensors
-  local_event_description: !input event_description
-  local_event_name: !input event_name
-  local_event_temperature: !input event_temperature
-  local_frost_setting: !input frost_setting
-  local_manual_temperature: !input manual_temperature
-  local_manual_override_timer: !input manual_override_timer
-  local_maximum_thermostat_temperature: !input maximum_thermostat_temperature
-  local_minimum_thermostat_temperature: !input minimum_thermostat_temperature
-  local_zone_calendar: !input zone_calendar
-  local_zone_occupancy_sensors: !input zone_occupancy_sensors
+  door_or_window_open_sensors: !input door_or_window_open_sensors
+  event_description: !input event_description
+  event_name: !input event_name
+  event_temperature: !input event_temperature
+  frost_setting: !input frost_setting
+  manual_temperature: !input manual_temperature
+  manual_override_timer: !input manual_override_timer
+  maximum_thermostat_temperature: !input maximum_thermostat_temperature
+  minimum_thermostat_temperature: !input minimum_thermostat_temperature
+  zone_calendar: !input zone_calendar
+  zone_occupancy_sensors: !input zone_occupancy_sensors
 
 ## ----------------------------------------------------------------------------
 ## TRIGGERS
@@ -292,7 +292,7 @@ action:
             state: idle
           #ignore if same value as before (e.g. triggered by template reload)
           - condition: template
-            value_template: "{{ trigger.set_temperature != states(local_manual_temperature) }}"
+            value_template: "{{ trigger.set_temperature != states(manual_temperature) }}"
         sequence:
           - service: timer.start
             data:
@@ -425,9 +425,9 @@ action:
                   {% set temperature_error_code = -4 %} {# no number field #}
                 {% elif not description.split('#')[1] | is_number %}
                   {% set temperature_error_code = -3 %} {# not a number #}
-                {% elif not (description.split('#')[1] | float(0)) >= local_minimum_thermostat_temperature %}
+                {% elif not (description.split('#')[1] | float(0)) >= minimum_thermostat_temperature %}
                   {% set temperature_error_code = -2 %} {# number too small #}
-                {% elif not (description.split('#')[1] | float(0)) <= local_maximum_thermostat_temperature %}
+                {% elif not (description.split('#')[1] | float(0)) <= maximum_thermostat_temperature %}
                   {% set temperature_error_code = -1 %} {# number too big #}
                 {% else %}
                   {% set temperature_error_code = 0 %}
@@ -435,7 +435,7 @@ action:
                 {% if temperature_error_code == 0 %}
                   {{ '%0.1f' | format(description.split('#')[1]  | float(0)) }}
                 {% else %}
-                  {{ local_frost_setting }}
+                  {{ frost_setting }}
                 {% endif %}
             target:
               entity_id: !input event_temperature
@@ -483,7 +483,7 @@ action:
             entity_id: !input door_or_window_open_timer
             state: idle
           - condition: template
-            value_template: "{{ local_door_or_window_open_sensors | select ('is_state', 'on') | list | count > 0 }}"
+            value_template: "{{ door_or_window_open_sensors | select ('is_state', 'on') | list | count > 0 }}"
         sequence:
           - service: climate.set_temperature
             data:
@@ -502,7 +502,7 @@ action:
             entity_id: !input unoccupancy_timer
             state: idle
           - condition: template
-            value_template: "{{ local_zone_occupancy_sensors | reject ('is_state', [ 'unknown',  'unavailable' ] ) | select ('is_state', 'on') | list | count > 0 }}"
+            value_template: "{{ zone_occupancy_sensors | reject ('is_state', [ 'unknown',  'unavailable' ] ) | select ('is_state', 'on') | list | count > 0 }}"
         sequence:
           - service: climate.set_temperature
             data:
@@ -517,18 +517,20 @@ action:
 
       # 3. If there is a manual override in operation
       - conditions:
+          - condition: trigger
+            id: set_temperature_change
           - condition: state
             entity_id: !input manual_override_timer
             state: active
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ states(local_manual_temperature) }}"
+              temperature: "{{ states(manual_temperature) }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
             data:
-              value: "Set manually to {{ states(local_manual_temperature) }}. Time left {{ ( as_timestamp(state_attr(local_manual_override_timer,'finishes_at'))-as_timestamp(now()) ) |  timestamp_custom('%H:%M', False, 0) }}"
+              value: "Set manually to {{ states(manual_temperature) }}. Time left {{ ( as_timestamp(state_attr(manual_override_timer,'finishes_at'))-as_timestamp(now()) ) |  timestamp_custom('%H:%M', False, 0) }}"
             target:
               entity_id: !input setting_reason
 
@@ -539,7 +541,7 @@ action:
             state: "on"
           - condition: template
             value_template: >-
-              {{ not states(local_event_description).split('#') | count >= 3 }}
+              {{ not states(event_description).split('#') | count >= 3 }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -549,7 +551,7 @@ action:
           - service: input_text.set_value
             data:
               value: >-
-                {{ "Turned off because the calendar event '" + states(local_event_name) + "' does not specify a temperature." }}
+                {{ "Turned off because the calendar event '" + states(event_name) + "' does not specify a temperature." }}
             target:
               entity_id: !input setting_reason
 
@@ -560,7 +562,7 @@ action:
             state: "on"
           - condition: template
             value_template: >-
-              {{ not states(local_event_description).split('#')[1] | is_number }}
+              {{ not states(event_description).split('#')[1] | is_number }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -570,7 +572,7 @@ action:
           - service: input_text.set_value
             data:
               value: >-
-                {{ "Turned off because the calendar event '" + states(local_event_name) + "' does not specify a valid number for the temperature." }}
+                {{ "Turned off because the calendar event '" + states(event_name) + "' does not specify a valid number for the temperature." }}
             target:
               entity_id: !input setting_reason
 
@@ -581,7 +583,7 @@ action:
             state: "on"
           - condition: template
             value_template: >-
-              {{ not (states(local_event_description).split('#')[1] | float(0)) >= local_minimum_thermostat_temperature }}
+              {{ not (states(event_description).split('#')[1] | float(0)) >= minimum_thermostat_temperature }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -591,7 +593,7 @@ action:
           - service: input_text.set_value
             data:
               value: >-
-                {{ "Turned off because the calendar event '" + states(local_event_name) + "' specifies a temperature below the minimum." }}
+                {{ "Turned off because the calendar event '" + states(event_name) + "' specifies a temperature below the minimum." }}
             target:
               entity_id: !input setting_reason
 
@@ -602,7 +604,7 @@ action:
             state: "on"
           - condition: template
             value_template: >-
-              {{ not (states(local_event_description).split('#')[1] | float(0)) <= local_maximum_thermostat_temperature }}
+              {{ not (states(event_description).split('#')[1] | float(0)) <= maximum_thermostat_temperature }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -612,7 +614,7 @@ action:
           - service: input_text.set_value
             data:
               value: >-
-                {{ "Turned off because the calendar event '" + states(local_event_name) + "' specifies a temperature above the maximum." }}
+                {{ "Turned off because the calendar event '" + states(event_name) + "' specifies a temperature above the maximum." }}
             target:
               entity_id: !input setting_reason
 
@@ -624,13 +626,13 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ states(local_event_temperature) }}"
+              temperature: "{{ states(event_temperature) }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
             data:
               value: >-
-                {{ "Set to " +  states(local_event_temperature) + " by calendar event '" + states(local_event_name) + "' until " + ( as_timestamp(state_attr(local_zone_calendar, 'end_time'))  ) |  timestamp_custom('%a %d %b %Y at %H:%M') + "." }}
+                {{ "Set to " +  states(event_temperature) + " by calendar event '" + states(event_name) + "' until " + ( as_timestamp(state_attr(zone_calendar, 'end_time'))  ) |  timestamp_custom('%a %d %b %Y at %H:%M') + "." }}
             target:
               entity_id: !input setting_reason
 
@@ -649,8 +651,8 @@ action:
             data:
               value: >-
                 {{ "Turned off because nothing is scheduled."}}
-                {% if state_attr(local_zone_calendar, 'message') %}
-                {{ "The next event is '" + state_attr(local_zone_calendar, 'message') + "' " + ( as_timestamp(state_attr(local_zone_calendar, 'start_time')) )  |  timestamp_custom('on %a %d %b %Y at %H:%M')}}
+                {% if state_attr(zone_calendar, 'message') %}
+                {{ "The next event is '" + state_attr(zone_calendar, 'message') + "' " + ( as_timestamp(state_attr(zone_calendar, 'start_time')) )  |  timestamp_custom('on %a %d %b %Y at %H:%M')}}
                 {% else %}
                 {{ "There are no future events." }}
                 {% endif %}
