@@ -519,9 +519,10 @@ action:
 
       # 4.1 If there is an active calendar event with no temperature field
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: "on"
+          - condition: trigger
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
               {{ not states(event_description).split('#') | count >= 3 }}
@@ -540,9 +541,10 @@ action:
 
       # 4.2 If there is an active calendar event with a temperature field that is not a number
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: "on"
+          - condition: trigger
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
               {{ not states(event_description).split('#')[1] | is_number }}
@@ -561,9 +563,10 @@ action:
 
       # 4.3 If there is an active calendar event with a temperature that is too low
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: "on"
+          - condition: trigger
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
               {{ not (states(event_description).split('#')[1] | float(0)) >= minimum_thermostat_temperature }}
@@ -582,9 +585,10 @@ action:
 
       # 4.4 If there is an active calendar event with a temperature that is too high
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: "on"
+          - condition: trigger
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
               {{ not (states(event_description).split('#')[1] | float(0)) <= maximum_thermostat_temperature }}
@@ -603,9 +607,10 @@ action:
 
       # 4.5 (Else) if there is an active calendar event with a valid temperature
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: "on"
+          - condition: trigger
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'start' }}"
         sequence:
           - service: climate.set_temperature
             data:
@@ -621,9 +626,10 @@ action:
 
       # 5. If there is a calendar but no active calendar event
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: "off"
+          - condition: trigger
+            id: calendar_event
+          - condition: template
+            value_template: "{{ trigger.event == 'end' }}"
         sequence:
           - service: climate.set_temperature
             data:
