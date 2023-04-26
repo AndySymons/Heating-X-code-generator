@@ -510,10 +510,19 @@ action:
 
       # 4.1 If there is an active calendar event with no temperature field
       - conditions:
-          - condition: trigger
-            id: calendar_event
-          - condition: template
-            value_template: "{{ trigger.event == 'start' }}"
+          - condition: or
+            conditions:
+              # Triggered by the calendar event starting.
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'start' }}"
+              # Triggered by the manual override ending.
+              - condition: trigger
+                id: manual_override_end
+          # The calendar event has no temperature field.
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float == -4 }}
@@ -532,10 +541,19 @@ action:
 
       # 4.2 If there is an active calendar event with a temperature field that is not a number
       - conditions:
-          - condition: trigger
-            id: calendar_event
-          - condition: template
-            value_template: "{{ trigger.event == 'start' }}"
+          - condition: or
+            conditions:
+              # Triggered by the calendar event starting.
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'start' }}"
+              # Triggered by the manual override ending.
+              - condition: trigger
+                id: manual_override_end
+          # The calendar event has no temperature field.
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float == -3 }}
@@ -554,10 +572,19 @@ action:
 
       # 4.3 If there is an active calendar event with a temperature that is too low
       - conditions:
-          - condition: trigger
-            id: calendar_event
-          - condition: template
-            value_template: "{{ trigger.event == 'start' }}"
+          - condition: or
+            conditions:
+              # Triggered by the calendar event starting.
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'start' }}"
+              # Triggered by the manual override ending.
+              - condition: trigger
+                id: manual_override_end
+          # The calendar event has no temperature field.
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float == -2 }}
@@ -576,10 +603,19 @@ action:
 
       # 4.4 If there is an active calendar event with a temperature that is too high
       - conditions:
-          - condition: trigger
-            id: calendar_event
-          - condition: template
-            value_template: "{{ trigger.event == 'start' }}"
+          - condition: or
+            conditions:
+              # Triggered by the calendar event starting.
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'start' }}"
+              # Triggered by the manual override ending.
+              - condition: trigger
+                id: manual_override_end
+          # The calendar event has no temperature field.
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float == -1 }}
@@ -598,8 +634,19 @@ action:
 
       # 4.5 (Else) if there is an active calendar event with a valid temperature
       - conditions:
-          - condition: trigger
-            id: calendar_event
+          - condition: or
+            conditions:
+              # Triggered by the calendar event starting.
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'start' }}"
+              # Triggered by the manual override ending.
+              - condition: trigger
+                id: manual_override_end
+          # The calendar event has no temperature field.
           - condition: template
             value_template: "{{ trigger.event == 'start' }}"
         sequence:
@@ -617,10 +664,18 @@ action:
 
       # 5. If there is a calendar but no active calendar event
       - conditions:
-          - condition: trigger
-            id: calendar_event
-          - condition: template
-            value_template: "{{ trigger.event == 'end' }}"
+          - condition: or
+            conditions:
+              # Triggered by the calendar event starting.
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'end' }}"
+              # Triggered by the manual override ending.
+              - condition: trigger
+                id: manual_override_end
         sequence:
           - service: climate.set_temperature
             data:
