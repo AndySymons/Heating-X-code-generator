@@ -257,9 +257,6 @@ action:
           - condition: state
             entity_id: !input echoblock_timer
             state: idle
-          # ignore if same value as before (e.g. triggered by template reload)
-          - condition: template
-            value_template: "{{ set_temperature != trigger.from_state.attributes.temperature }}"
         sequence:
           - service: timer.start
             data:
