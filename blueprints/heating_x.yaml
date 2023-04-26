@@ -64,13 +64,6 @@ blueprint:
         entity:
           domain: input_datetime
 
-    event_description:
-      name: HELPER - Event description
-      description: The global variable (helper) to hold the description of the current event (if any)
-      selector:
-        entity:
-          domain: input_text
-
     event_temperature:
       name: HELPER - Event temperature
       description: The global variable (helper) to hold the temperature specified in the current event (if any)
@@ -174,7 +167,6 @@ mode: queued # use all triggers but avoid conflicting states
 variables:
   thermostat_controls: !input thermostat_controls
   door_or_window_open_sensors: !input door_or_window_open_sensors
-  event_description: !input event_description
   event_name: !input event_name
   event_temperature: !input event_temperature
   frost_setting: !input frost_setting
@@ -395,30 +387,26 @@ action:
               datetime: "{{ trigger.calendar_event.end }}"
             target:
               entity_id: !input event_end
-          - service: input_text.set_value
-            data:
-              value: "{{ trigger.calendar_event.description }}"
-            target:
-              entity_id: !input event_description
           - service: input_number.set_value
             data:
               value: >-
                 {% set description = trigger.calendar_event.description %} {# copy description field #}
-                {% if not description.split('#') | count >= 3 %}
+                {% if description.split('#') | count < 3 %}
                   {% set temperature_error_code = -4 %} {# no number field #}
                 {% elif not description.split('#')[1] | is_number %}
                   {% set temperature_error_code = -3 %} {# not a number #}
-                {% elif not (description.split('#')[1] | float(0)) >= minimum_thermostat_temperature %}
+                {% elif (description.split('#')[1] | float(0)) < minimum_thermostat_temperature %}
                   {% set temperature_error_code = -2 %} {# number too small #}
-                {% elif not (description.split('#')[1] | float(0)) <= maximum_thermostat_temperature %}
+                {% elif (description.split('#')[1] | float(0)) > maximum_thermostat_temperature %}
                   {% set temperature_error_code = -1 %} {# number too big #}
                 {% else %}
                   {% set temperature_error_code = 0 %}
                 {% endif %}
+
                 {% if temperature_error_code == 0 %}
                   {{ '%0.1f' | format(description.split('#')[1]  | float(0)) }}
                 {% else %}
-                  {{ [frost_setting, minimum_thermostat_temperature] | max }}
+                  {{ temperature_error_code }}
                 {% endif %}
             target:
               entity_id: !input event_temperature
@@ -444,11 +432,6 @@ action:
               datetime: "3000-01-01T00:00:00"
             target:
               entity_id: !input event_end
-          - service: input_text.set_value
-            data:
-              value: (none)
-            target:
-              entity_id: !input event_description
           - service: input_number.set_value
             data:
               value: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
@@ -525,7 +508,7 @@ action:
             value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
-              {{ not states(event_description).split('#') | count >= 3 }}
+              {{ states(event_temperature) | float == -4 }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -547,7 +530,7 @@ action:
             value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
-              {{ not states(event_description).split('#')[1] | is_number }}
+              {{ states(event_temperature) | float == -3 }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -569,7 +552,7 @@ action:
             value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
-              {{ not (states(event_description).split('#')[1] | float(0)) >= minimum_thermostat_temperature }}
+              {{ states(event_temperature) | float == -2 }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -591,7 +574,7 @@ action:
             value_template: "{{ trigger.event == 'start' }}"
           - condition: template
             value_template: >-
-              {{ not (states(event_description).split('#')[1] | float(0)) <= maximum_thermostat_temperature }}
+              {{ states(event_temperature) | float == -1 }}
         sequence:
           - service: climate.set_temperature
             data:
