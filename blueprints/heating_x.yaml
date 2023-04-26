@@ -277,18 +277,18 @@ action:
           - condition: template
             value_template: "{{ trigger.set_temperature != states(manual_temperature) }}"
         sequence:
-          - service: timer.start
-            data:
-              duration: !input manual_override_period
-            target:
-              entity_id: !input manual_override_timer
-
           # Save the manual setting most recently received (this trigger)
           - service: input_number.set_value
             data:
               value: "{{ trigger.set_temperature }}"
             target:
               entity_id: !input manual_temperature
+
+          - service: timer.start
+            data:
+              duration: !input manual_override_period
+            target:
+              entity_id: !input manual_override_timer
       #
       # b. Manual override end
       #
