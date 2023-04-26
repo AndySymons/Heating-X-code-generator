@@ -365,32 +365,60 @@ action:
   ## ----------------------------------------------------------------------------
 
   - choose:
-      ### Set the calendar event helpers to the current event. ###
       - conditions:
-          - condition: trigger
-            id: calendar_event
-          - condition: template
-            value_template: "{{ trigger.event == 'start' }}"
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'start' }}"
+              # If there is an active event we might as well update the helpers.
+              - condition: state
+                entity_id: !input zone_calendar
+                state: 'on'
         sequence:
           - service: input_text.set_value
             data:
-              value: "{{ trigger.calendar_event.summary }}"
+              value: >-
+                {% if trigger.platform == 'calendar' %}
+                  {{ trigger.calendar_event.summary }}
+                {% else %}
+                  {{ state_attr(zone_calendar, 'message') }}
+                {% endif %}
             target:
               entity_id: !input event_name
           - service: input_datetime.set_datetime
             data:
-              datetime: "{{ trigger.calendar_event.start }}"
+              datetime: >-
+                {% if trigger.platform == 'calendar' %}
+                  {{ trigger.calendar_event.start }}
+                {% else %}
+                  {{ state_attr(zone_calendar, 'start_time') }}
+                {% endif %}
             target:
               entity_id: !input event_start
           - service: input_datetime.set_datetime
             data:
-              datetime: "{{ trigger.calendar_event.end }}"
+              datetime: >-
+                {% if trigger.platform == 'calendar' %}
+                  {{ trigger.calendar_event.end }}
+                {% else %}
+                  {{ state_attr(zone_calendar, 'end_time') }}
+                {% endif %}
             target:
               entity_id: !input event_end
           - service: input_number.set_value
             data:
               value: >-
-                {% set description = trigger.calendar_event.description %} {# copy description field #}
+                {# copy description field #}
+                {% if trigger.platform == 'calendar' %}
+                  {% set description = trigger.calendar_event.description %}
+                {% else %}
+                  {% set description = state_attr(zone_calendar, 'description') %}
+                {% endif %}
+
                 {% if description.split('#') | count < 3 %}
                   {% set temperature_error_code = -4 %} {# no number field #}
                 {% elif not description.split('#')[1] | is_number %}
@@ -410,12 +438,19 @@ action:
                 {% endif %}
             target:
               entity_id: !input event_temperature
-      ### Reset the calendar event helpers when the event ends. ###
       - conditions:
-          - condition: trigger
-            id: calendar_event
-          - condition: template
-            value_template: "{{ trigger.event == 'end' }}"
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id: calendar_event
+                  - condition: template
+                    value_template: "{{ trigger.event == 'end' }}"
+              # If there is no active event we might as well update the helpers.
+              - condition: state
+                entity_id: !input zone_calendar
+                state: 'off'
         sequence:
           - service: input_text.set_value
             data:
