@@ -127,24 +127,6 @@ blueprint:
         entity:
           domain: timer
 
-    minimum_thermostat_temperature:
-      name: PARAMETER - Minimum thermostat temperature
-      description: The minimum temperature that can be set on the thermostat
-      selector:
-        number:
-          min: 0
-          max: 100
-      default: 5
-
-    maximum_thermostat_temperature:
-      name: PARAMETER - Maximum thermostat temperature
-      description: The maximum temperature that can be set on the thermostat
-      selector:
-        number:
-          min: 0
-          max: 100
-      default: 95
-
     frost_setting:
       name: PARAMETER - Frost setting
       description: The temperature to be used when the heating is turned off
@@ -190,6 +172,7 @@ mode: queued # use all triggers but avoid conflicting states
 ## ----------------------------------------------------------------------------
 
 variables:
+  thermostat_controls: !input thermostat_controls
   door_or_window_open_sensors: !input door_or_window_open_sensors
   event_description: !input event_description
   event_name: !input event_name
@@ -197,8 +180,8 @@ variables:
   frost_setting: !input frost_setting
   manual_temperature: !input manual_temperature
   manual_override_timer: !input manual_override_timer
-  maximum_thermostat_temperature: !input maximum_thermostat_temperature
-  minimum_thermostat_temperature: !input minimum_thermostat_temperature
+  maximum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'max_temp') | min }}"
+  minimum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'min_temp') | max }}"
   zone_calendar: !input zone_calendar
   zone_occupancy_sensors: !input zone_occupancy_sensors
 
