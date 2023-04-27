@@ -176,7 +176,6 @@ variables:
 trigger:
   # 1. Calendar event starts or ends
   - platform: calendar
-    event: start
     entity_id: !input zone_calendar
     id: calendar_event
 
@@ -240,6 +239,9 @@ trigger:
     entity_id: !input unoccupancy_timer
     from: active
     id: unoccupancy_timer_end
+
+  - platform: time_pattern
+    minutes: "/1"
 
 ## ----------------------------------------------------------------------------
 ## ACTIONS STEP 1 -- SET THE STATE VARİABLES
