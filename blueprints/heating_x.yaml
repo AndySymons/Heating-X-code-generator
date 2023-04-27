@@ -183,16 +183,29 @@ variables:
 ## ----------------------------------------------------------------------------
 
 trigger:
-  # Calendar event starts or ends
+  # Calendar event starts
   - platform: calendar
     event: start
     entity_id: !input zone_calendar
     id: calendar_event_start
 
+  # Calendar event ends
   - platform: calendar
     event: end
     entity_id: !input zone_calendar
     id: calendar_event_end
+
+  # Calendar becomes unknown
+  - platform: state
+    entity_id: !input zone_calendar
+    to: "unknown"
+    id: calendar_unknown
+
+  # Calendar becomes unavailable
+  - platform: state
+    entity_id: !input zone_calendar
+    to: "unavailable"
+    id: calendar_unavailable
 
   # Change in any one of the thermostat set temperatures
   - platform: state
@@ -236,7 +249,7 @@ trigger:
       seconds: 10
     id: zone_occupied
 
-  # 6. A door or window is opened
+  # A door or window is opened
   - platform: state
     entity_id: !input door_or_window_open_sensors
     to: "on"
@@ -244,7 +257,7 @@ trigger:
       seconds: 10
     id: door_or_window_opened
 
-  # 7. A doors or windows is closed, or becomes 'unknown' or 'unavailable'
+  # A doors or windows is closed, or becomes 'unknown' or 'unavailable'
   - platform: state
     entity_id: !input door_or_window_open_sensors
     from: "on"
@@ -252,16 +265,18 @@ trigger:
       seconds: 10
     id: doors_and_windows_closed
 
-  # 8. Door or window open timer finished (time to turn off the heating)
-  - platform: state
-    entity_id: !input door_or_window_open_timer
-    from: active
+  # Door or window open timer finished (time to turn off the heating)
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: !input door_or_window_open_timer
     id: door_or_window_open_timer_end
 
-  # 9. Unoccupancy timer finished (time to turn off the heating)
-  - platform: state
-    entity_id: !input unoccupancy_timer
-    from: active
+  # Unoccupancy timer finished (time to turn off the heating)
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: !input unoccupancy_timer
     id: unoccupancy_timer_end
 
 ## ----------------------------------------------------------------------------
@@ -316,12 +331,7 @@ action:
           - condition: trigger
             id: doors_and_windows_closed
         sequence:
-          - service: timer.start
-            data:
-              duration: !input door_or_window_open_period
-            target:
-              entity_id: !input door_or_window_open_timer
-          - service: timer.pause # Keeps it in the active state
+          - service: timer.cancel
             target:
               entity_id: !input door_or_window_open_timer
       #
@@ -349,12 +359,7 @@ action:
           - condition: trigger
             id: zone_occupied
         sequence:
-          - service: timer.start
-            data:
-              duration: !input unoccupancy_period
-            target:
-              entity_id: !input unoccupancy_timer
-          - service: timer.pause # Put it in the paused state
+          - service: timer.cancel
             target:
               entity_id: !input unoccupancy_timer
 
@@ -469,9 +474,8 @@ action:
   - choose:
       # 1. If a door or window has been open for the set period, turn the heating off
       - conditions:
-          - condition: state
-            entity_id: !input door_or_window_open_timer
-            state: idle
+          - condition: trigger
+            id: door_or_window_open_timer_end
           - condition: template
             value_template: "{{ door_or_window_open_sensors | select ('is_state', 'on') | list | count > 0 }}"
         sequence:
@@ -495,9 +499,8 @@ action:
 
       # 2. If the zone has been unoccupied for the set period, turn the heating off
       - conditions:
-          - condition: state
-            entity_id: !input unoccupancy_timer
-            state: idle
+          - condition: trigger
+            id: unoccupancy_timer_end
           - condition: template
             value_template: "{{ zone_occupancy_sensors | reject ('is_state', [ 'unknown',  'unavailable' ] ) | select ('is_state', 'on') | list | count > 0 }}"
         sequence:
@@ -521,8 +524,19 @@ action:
 
       # 3. If there is a manual override in operation
       - conditions:
-          - condition: trigger
-            id: manual_override_start
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: manual_override_start
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - doors_and_windows_closed
+                      - zone_occupied
+                  - condition: state
+                    entity_id: !input manual_override_timer
+                    state: active
         sequence:
           - service: climate.set_temperature
             data:
@@ -537,9 +551,8 @@ action:
 
       # 4. If the calendar state becomes unknown
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: unknown
+          - condition: trigger
+            id: calendar_state_unknown
         sequence:
           - service: climate.set_temperature
             data:
@@ -561,9 +574,8 @@ action:
 
       # 5. If the calendar becomes unavailable
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: unavailable
+          - condition: trigger
+            id: calendar_unavailable
         sequence:
           - service: climate.set_temperature
             data:
@@ -589,6 +601,8 @@ action:
             id:
               - calendar_event_end
               - manual_override_end
+              - doors_and_windows_closed
+              - zone_occupied
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float == -5 }}
@@ -623,6 +637,8 @@ action:
             id:
               - calendar_event_start
               - manual_override_end
+              - doors_and_windows_closed
+              - zone_occupied
           # The calendar event has no temperature field.
           - condition: template
             value_template: >-
@@ -653,6 +669,8 @@ action:
             id:
               - calendar_event_start
               - manual_override_end
+              - doors_and_windows_closed
+              - zone_occupied
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float == -3 }}
@@ -688,6 +706,8 @@ action:
                   - condition: trigger
                     id:
                       - manual_override_end
+                      - doors_and_windows_closed
+                      - zone_occupied
                   - condition: state
                     entity_id: !input zone_calendar
                     state: "on"
@@ -720,6 +740,8 @@ action:
             id:
               - calendar_event_start
               - manual_override_end
+              - doors_and_windows_closed
+              - zone_occupied
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float == -1 }}
@@ -749,6 +771,8 @@ action:
             id:
               - calendar_event_start
               - manual_override_end
+              - doors_and_windows_closed
+              - zone_occupied
           - condition: template
             value_template: >-
               {{ states(event_temperature) | float >= 0 }}
