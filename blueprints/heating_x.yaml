@@ -71,6 +71,13 @@ blueprint:
         entity:
           domain: input_number
 
+    manual_temperature:
+      name: HELPER - Manual temperature
+      description: The global variable (helper) to hold the temperature specified by manual control of the device or the dashboard
+      selector:
+        entity:
+          domain: input_number
+
     setting_reason:
       name: HELPER - Setting reason
       description: The global variable (helper) into which the automation writes the reason for the current setting (for use on a dashboard)
@@ -163,23 +170,31 @@ variables:
   event_name: !input event_name
   event_temperature: !input event_temperature
   frost_setting: !input frost_setting
+  manual_temperature: !input manual_temperature
   manual_override_timer: !input manual_override_timer
   maximum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'max_temp') | min }}"
   minimum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'min_temp') | max }}"
   zone_calendar: !input zone_calendar
   zone_occupancy_sensors: !input zone_occupancy_sensors
+  echoblock_duration: 5
 
 ## ----------------------------------------------------------------------------
 ## TRIGGERS
 ## ----------------------------------------------------------------------------
 
 trigger:
-  # 1. Calendar event starts or ends
+  # Calendar event starts or ends
   - platform: calendar
+    event: start
     entity_id: !input zone_calendar
-    id: calendar_event
+    id: calendar_event_start
 
-  # 2. Change in any one of the thermostat set temperatures
+  - platform: calendar
+    event: end
+    entity_id: !input zone_calendar
+    id: calendar_event_end
+
+  # Change in any one of the thermostat set temperatures
   - platform: state
     attribute: temperature
     entity_id: !input thermostat_controls
@@ -187,7 +202,16 @@ trigger:
     variables:
       set_temperature: "{{ state_attr(trigger.entity_id, 'temperature') }}"
 
-  # 3. End of manual override (timer idle, paused, unknown, or unavailable)
+  # Manual override starts
+  - platform: event
+    event_type:
+      - timer.started
+      - timer.restarted
+    event_data:
+      entity_id: !input manual_override_timer
+    id: manual_override_start
+
+  # Manual override ends
   - platform: event
     event_type:
       - timer.finished
@@ -196,7 +220,7 @@ trigger:
       entity_id: !input manual_override_timer
     id: manual_override_end
 
-  # 4. Zone becomes unoccupied: sensor available and off (clear)
+  # Zone becomes unoccupied: sensor available and off (clear)
   - platform: state
     entity_id: !input zone_occupancy_sensors
     to: "off"
@@ -204,7 +228,7 @@ trigger:
       seconds: 10
     id: zone_unoccupied
 
-  # 5. Zone becomes occupied: sensor 'detected' (on), 'unknown', or 'unavailable'
+  # Zone becomes occupied: sensor 'detected' (on), 'unknown', or 'unavailable'
   - platform: state
     entity_id: !input zone_occupancy_sensors
     from: "off"
@@ -255,11 +279,16 @@ action:
       - conditions:
           - condition: trigger
             id: set_temperature_change
-          #ignore if it is just an echo from a setting from this automation
+          # Ignore if it is just an echo from a setting from this automation
           - condition: state
             entity_id: !input echoblock_timer
             state: idle
         sequence:
+          - service: input_number.set_value
+            data:
+              value: "{{ set_temperature }}"
+            target:
+              entity_id: !input manual_temperature
           - service: timer.start
             data:
               duration: !input manual_override_period
@@ -340,16 +369,12 @@ action:
       - conditions:
           - condition: or
             conditions:
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'start' }}"
+              - condition: trigger
+                id: calendar_event_start
               # If there is an active event we might as well update the helpers.
               - condition: state
                 entity_id: !input zone_calendar
-                state: 'on'
+                state: "on"
         sequence:
           - service: input_text.set_value
             data:
@@ -413,16 +438,12 @@ action:
       - conditions:
           - condition: or
             conditions:
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'end' }}"
+              - condition: trigger
+                id: calendar_event_end
               # If there is no active event we might as well update the helpers.
               - condition: state
                 entity_id: !input zone_calendar
-                state: 'off'
+                state: "off"
         sequence:
           - service: input_text.set_value
             data:
@@ -441,7 +462,7 @@ action:
               entity_id: !input event_end
           - service: input_number.set_value
             data:
-              value: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              value: -5 # unset temperature
             target:
               entity_id: !input event_temperature
 
@@ -467,10 +488,11 @@ action:
               value: "Turned off because a door or window is open"
             target:
               entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
           - service: timer.start
             data:
               duration:
-                seconds: 1
+                seconds: "{{ echoblock_duration }}"
             target:
               entity_id: !input echoblock_timer
 
@@ -492,56 +514,35 @@ action:
               value: "Turned off because the zone is unoccupied"
             target:
               entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
           - service: timer.start
             data:
               duration:
-                seconds: 1
+                seconds: "{{ echoblock_duration }}"
             target:
               entity_id: !input echoblock_timer
 
       # 3. If there is a manual override in operation
       - conditions:
           - condition: trigger
-            id: set_temperature_change
+            id: manual_override_start
+        sequence:
+          - service: climate.set_temperature
+            data:
+              temperature: "{{ states(manual_temperature) }}"
+            target:
+              entity_id: !input thermostat_controls
+          - service: input_text.set_value
+            data:
+              value: "Set manually to {{ states(manual_temperature) }}. Finishes at {{ as_timestamp(state_attr(manual_override_timer,'finishes_at')) |  timestamp_custom('%H:%M') }}."
+            target:
+              entity_id: !input setting_reason
+
+      # 4. If the calendar state becomes unknown
+      - conditions:
           - condition: state
-            entity_id: !input manual_override_timer
-            state: active
-        sequence:
-          - service: climate.set_temperature
-            data:
-              temperature: "{{ set_temperature }}"
-            target:
-              entity_id: !input thermostat_controls
-          - service: input_text.set_value
-            data:
-              value: "Set manually to {{ set_temperature }}. Time left {{ ( as_timestamp(state_attr(manual_override_timer,'finishes_at'))-as_timestamp(now()) ) |  timestamp_custom('%H:%M', False, 0) }}"
-            target:
-              entity_id: !input setting_reason
-          - service: timer.start
-            data:
-              duration:
-                seconds: 1
-            target:
-              entity_id: !input echoblock_timer
-
-      # 4.1 If there is an active calendar event with no temperature field
-      - conditions:
-          - condition: or
-            conditions:
-              # Triggered by the calendar event starting.
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'start' }}"
-              # Triggered by the manual override ending.
-              - condition: trigger
-                id: manual_override_end
-          # The calendar event has no temperature field.
-          - condition: template
-            value_template: >-
-              {{ states(event_temperature) | float == -4 }}
+            entity_id: !input zone_calendar
+            state: unknown
         sequence:
           - service: climate.set_temperature
             data:
@@ -550,35 +551,22 @@ action:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
             data:
-              value: >-
-                {{ "Turned off because the calendar event '" + states(event_name) + "' does not specify a temperature." }}
+              value: Turned off because the calendar state is unknown
             target:
               entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
           - service: timer.start
             data:
               duration:
-                seconds: 1
+                seconds: "{{ echoblock_duration }}"
             target:
               entity_id: !input echoblock_timer
 
-      # 4.2 If there is an active calendar event with a temperature field that is not a number
+      # 5. If the calendar becomes unavailable
       - conditions:
-          - condition: or
-            conditions:
-              # Triggered by the calendar event starting.
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'start' }}"
-              # Triggered by the manual override ending.
-              - condition: trigger
-                id: manual_override_end
-          # The calendar event has no temperature field.
-          - condition: template
-            value_template: >-
-              {{ states(event_temperature) | float == -3 }}
+          - condition: state
+            entity_id: !input zone_calendar
+            state: unavailable
         sequence:
           - service: climate.set_temperature
             data:
@@ -587,141 +575,26 @@ action:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
             data:
-              value: >-
-                {{ "Turned off because the calendar event '" + states(event_name) + "' does not specify a valid number for the temperature." }}
+              value: Turned off because the calendar is unavailable
             target:
               entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
           - service: timer.start
             data:
               duration:
-                seconds: 1
+                seconds: "{{ echoblock_duration }}"
             target:
               entity_id: !input echoblock_timer
 
-      # 4.3 If there is an active calendar event with a temperature that is too low
+      # 6.1 If there is a calendar but no active calendar event (unset temperature)
       - conditions:
-          - condition: or
-            conditions:
-              # Triggered by the calendar event starting.
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'start' }}"
-              # Triggered by the manual override ending.
-              - condition: trigger
-                id: manual_override_end
-          # The calendar event has no temperature field.
+          - condition: trigger
+            id:
+              - calendar_event_end
+              - manual_override_end
           - condition: template
             value_template: >-
-              {{ states(event_temperature) | float == -2 }}
-        sequence:
-          - service: climate.set_temperature
-            data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
-            target:
-              entity_id: !input thermostat_controls
-          - service: input_text.set_value
-            data:
-              value: >-
-                {{ "Turned off because the calendar event '" + states(event_name) + "' specifies a temperature below the minimum." }}
-            target:
-              entity_id: !input setting_reason
-          - service: timer.start
-            data:
-              duration:
-                seconds: 1
-            target:
-              entity_id: !input echoblock_timer
-
-      # 4.4 If there is an active calendar event with a temperature that is too high
-      - conditions:
-          - condition: or
-            conditions:
-              # Triggered by the calendar event starting.
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'start' }}"
-              # Triggered by the manual override ending.
-              - condition: trigger
-                id: manual_override_end
-          # The calendar event has no temperature field.
-          - condition: template
-            value_template: >-
-              {{ states(event_temperature) | float == -1 }}
-        sequence:
-          - service: climate.set_temperature
-            data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
-            target:
-              entity_id: !input thermostat_controls
-          - service: input_text.set_value
-            data:
-              value: >-
-                {{ "Turned off because the calendar event '" + states(event_name) + "' specifies a temperature above the maximum." }}
-            target:
-              entity_id: !input setting_reason
-          - service: timer.start
-            data:
-              duration:
-                seconds: 1
-            target:
-              entity_id: !input echoblock_timer
-
-      # 4.5 (Else) if there is an active calendar event with a valid temperature
-      - conditions:
-          - condition: or
-            conditions:
-              # Triggered by the calendar event starting.
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'start' }}"
-              # Triggered by the manual override ending.
-              - condition: trigger
-                id: manual_override_end
-          # The calendar event has no temperature field.
-          - condition: template
-            value_template: "{{ trigger.event == 'start' }}"
-        sequence:
-          - service: climate.set_temperature
-            data:
-              temperature: "{{ states(event_temperature) }}"
-            target:
-              entity_id: !input thermostat_controls
-          - service: input_text.set_value
-            data:
-              value: >-
-                {{ "Set to " +  states(event_temperature) + " by calendar event '" + states(event_name) + "' until " + ( as_timestamp(state_attr(zone_calendar, 'end_time'))  ) |  timestamp_custom('%a %d %b %Y at %H:%M') + "." }}
-            target:
-              entity_id: !input setting_reason
-          - service: timer.start
-            data:
-              duration:
-                seconds: 1
-            target:
-              entity_id: !input echoblock_timer
-
-      # 5. If there is a calendar but no active calendar event
-      - conditions:
-          - condition: or
-            conditions:
-              # Triggered by the calendar event starting.
-              - condition: and
-                conditions:
-                  - condition: trigger
-                    id: calendar_event
-                  - condition: template
-                    value_template: "{{ trigger.event == 'end' }}"
-              # Triggered by the manual override ending.
-              - condition: trigger
-                id: manual_override_end
+              {{ states(event_temperature) | float == -5 }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -739,18 +612,24 @@ action:
                 {% endif %}
             target:
               entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
           - service: timer.start
             data:
               duration:
-                seconds: 1
+                seconds: "{{ echoblock_duration }}"
             target:
               entity_id: !input echoblock_timer
 
-      #6. If the calendar state becomes unknown
+      # 6.2 If there is an active calendar event with no temperature field
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: unknown
+          - condition: trigger
+            id:
+              - calendar_event_start
+              - manual_override_end
+          # The calendar event has no temperature field.
+          - condition: template
+            value_template: >-
+              {{ states(event_temperature) | float == -4 }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -759,21 +638,27 @@ action:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
             data:
-              value: Turned off because the calendar state is unknown
+              value: >-
+                {{ "Turned off because the calendar event '" + states(event_name) + "' does not specify a temperature." }}
             target:
               entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
           - service: timer.start
             data:
               duration:
-                seconds: 1
+                seconds: "{{ echoblock_duration }}"
             target:
               entity_id: !input echoblock_timer
 
-      #7. If the calendar becomes unavailable
+      # 6.3 If there is an active calendar event with a temperature field that is not a number
       - conditions:
-          - condition: state
-            entity_id: !input zone_calendar
-            state: unavailable
+          - condition: trigger
+            id:
+              - calendar_event_start
+              - manual_override_end
+          - condition: template
+            value_template: >-
+              {{ states(event_temperature) | float == -3 }}
         sequence:
           - service: climate.set_temperature
             data:
@@ -782,12 +667,110 @@ action:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
             data:
-              value: Turned off because the calendar is unavailable
+              value: >-
+                {{ "Turned off because the calendar event '" + states(event_name) + "' does not specify a valid number for the temperature." }}
             target:
               entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
           - service: timer.start
             data:
               duration:
-                seconds: 1
+                seconds: "{{ echoblock_duration }}"
+            target:
+              entity_id: !input echoblock_timer
+
+      # 6.4 If there is an active calendar event with a temperature that is too low
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id:
+                  - calendar_event_start
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - manual_override_end
+                  - condition: state
+                    entity_id: !input zone_calendar
+                    state: "on"
+          - condition: template
+            value_template: >-
+              {{ states(event_temperature) | float == -2 }}
+        sequence:
+          - service: climate.set_temperature
+            data:
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+            target:
+              entity_id: !input thermostat_controls
+          - service: input_text.set_value
+            data:
+              value: >-
+                {{ "Turned off because the calendar event '" + states(event_name) + "' specifies a temperature below the minimum." }}
+            target:
+              entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
+          - service: timer.start
+            data:
+              duration:
+                seconds: "{{ echoblock_duration }}"
+            target:
+              entity_id: !input echoblock_timer
+
+      # 6.5 If there is an active calendar event with a temperature that is too high
+      - conditions:
+          - condition: trigger
+            id:
+              - calendar_event_start
+              - manual_override_end
+          - condition: template
+            value_template: >-
+              {{ states(event_temperature) | float == -1 }}
+        sequence:
+          - service: climate.set_temperature
+            data:
+              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+            target:
+              entity_id: !input thermostat_controls
+          - service: input_text.set_value
+            data:
+              value: >-
+                {{ "Turned off because the calendar event '" + states(event_name) + "' specifies a temperature above the maximum." }}
+            target:
+              entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
+          - service: timer.start
+            data:
+              duration:
+                seconds: "{{ echoblock_duration }}"
+            target:
+              entity_id: !input echoblock_timer
+
+      # 6.6 (Else) if there is an active calendar event with a valid temperature
+      - conditions:
+          - condition: trigger
+            id:
+              - calendar_event_start
+              - manual_override_end
+          - condition: template
+            value_template: >-
+              {{ states(event_temperature) | float >= 0 }}
+        sequence:
+          - service: climate.set_temperature
+            data:
+              temperature: "{{ states(event_temperature) }}"
+            target:
+              entity_id: !input thermostat_controls
+          - service: input_text.set_value
+            data:
+              value: >-
+                {{ "Set to " +  states(event_temperature) + " by calendar event '" + states(event_name) + "' until " + ( as_timestamp(state_attr(zone_calendar, 'end_time'))  ) |  timestamp_custom('%a %d %b %Y at %H:%M') + "." }}
+            target:
+              entity_id: !input setting_reason
+          # Echoblock to avoid setting the temperature to trigger a manual override
+          - service: timer.start
+            data:
+              duration:
+                seconds: "{{ echoblock_duration }}"
             target:
               entity_id: !input echoblock_timer
