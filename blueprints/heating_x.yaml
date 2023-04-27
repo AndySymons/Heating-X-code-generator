@@ -264,9 +264,6 @@ trigger:
     from: active
     id: unoccupancy_timer_end
 
-  - platform: time_pattern
-    minutes: "/1"
-
 ## ----------------------------------------------------------------------------
 ## ACTIONS STEP 1 -- SET THE STATE VARİABLES
 ## ----------------------------------------------------------------------------
