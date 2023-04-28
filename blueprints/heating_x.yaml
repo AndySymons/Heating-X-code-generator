@@ -164,10 +164,10 @@ mode: queued  # Use all triggers but avoid conflicting states
 
 ## ----------------------------------------------------------------------------
 ## LOCAL VARIABLES
-## needed to capture global variable values for use in templates
 ## ----------------------------------------------------------------------------
 
 variables:
+  # Input variables needed to capture global variable values for use in templates.
   thermostat_controls: !input thermostat_controls
   door_or_window_open_sensors: !input door_or_window_open_sensors
   event_name: !input event_name
@@ -175,12 +175,13 @@ variables:
   frost_setting: !input frost_setting
   manual_temperature: !input manual_temperature
   manual_override_timer: !input manual_override_timer
+  zone_calendar: !input zone_calendar
+  zone_occupancy_sensors: !input zone_occupancy_sensors
+  # Reusable variables.
+  echoblock_duration: 5
   maximum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'max_temp') | min }}"
   minimum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'min_temp') | max }}"
   off_temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
-  zone_calendar: !input zone_calendar
-  zone_occupancy_sensors: !input zone_occupancy_sensors
-  echoblock_duration: 5
 
 ## ----------------------------------------------------------------------------
 ## TRIGGERS
