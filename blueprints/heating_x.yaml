@@ -1,7 +1,11 @@
 blueprint:
   name: "Heating X"
-  description: Controls one or more thermostats from a calendar, allows temporary manual override, and optionally turns off thermostat if a door or window is opened, or if the zone is unoccupied for a while.
+  description: >-
+    Controls one or more thermostats from a calendar,
+    allows temporary manual override, and optionally turns off thermostat
+    if a door or window is opened, or if the zone is unoccupied for a while.
   domain: automation
+  mode: queued  # Use all triggers but avoid conflicting states
 
   ### ----------------------------------------------------------------------------
   ### INPUTS
@@ -157,8 +161,6 @@ blueprint:
         time:
       default: "01:00:00"
 
-mode: queued # use all triggers but avoid conflicting states
-
 ## ----------------------------------------------------------------------------
 ## LOCAL VARIABLES
 ## needed to capture global variable values for use in templates
@@ -286,7 +288,7 @@ trigger:
 action:
   - choose:
       #
-      # a. Manual override start
+      # Manual override start
       #
       - conditions:
           - condition: trigger
@@ -307,7 +309,7 @@ action:
             target:
               entity_id: !input manual_override_timer
       #
-      # c. Door or window opened - start timer
+      # Door or window opened - start timer
       #
       - conditions:
           - condition: trigger
@@ -325,7 +327,7 @@ action:
             target:
               entity_id: !input door_or_window_open_timer
       #
-      # d. Doors and windows closed - restart and pause timer
+      # Doors and windows closed - restart and pause timer
       #
       - conditions:
           - condition: trigger
@@ -335,7 +337,7 @@ action:
             target:
               entity_id: !input door_or_window_open_timer
       #
-      # e. Unoccupancy - start timer
+      # Unoccupancy - start timer
       #
       - conditions:
           - condition: trigger
@@ -353,7 +355,7 @@ action:
             target:
               entity_id: !input unoccupancy_timer
       #
-      # f. Zone occupied - restart and pause timer
+      # Zone occupied - restart and pause timer
       #
       - conditions:
           - condition: trigger
@@ -364,7 +366,7 @@ action:
               entity_id: !input unoccupancy_timer
 
   ## ----------------------------------------------------------------------------
-  ## ACTIONS STEP 2 -- REFRESH THE CALENDAR EVENT HELPERS (IF NEEDED)
+  ## ACTIONS STEP 2 -- REFRESH THE CALENDAR EVENT HELPERS ON CALENDAR EVENT
   ## ----------------------------------------------------------------------------
 
   - choose:
@@ -441,7 +443,7 @@ action:
   ## ACTIONS STEP 3 -- DETERMINE THE REQUIRED TEMPERATURE AND THE REASON
   ## ----------------------------------------------------------------------------
   - choose:
-      # 1. If a door or window has been open for the set period, turn the heating off
+      # If a door or window has been open for the set period, turn the heating off
       - conditions:
           - condition: trigger
             id: door_or_window_open_timer_end
@@ -466,7 +468,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 2. If the zone has been unoccupied for the set period, turn the heating off
+      # If the zone has been unoccupied for the set period, turn the heating off
       - conditions:
           - condition: trigger
             id: unoccupancy_timer_end
@@ -491,7 +493,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 3. If there is a manual override in operation
+      # If there is a manual override in operation
       - conditions:
           - condition: or
             conditions:
@@ -518,7 +520,7 @@ action:
             target:
               entity_id: !input setting_reason
 
-      # 4. If the calendar state becomes unknown
+      # If the calendar state becomes unknown
       - conditions:
           - condition: trigger
             id: calendar_state_unknown
@@ -541,7 +543,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 5. If the calendar becomes unavailable
+      # If the calendar becomes unavailable
       - conditions:
           - condition: trigger
             id: calendar_unavailable
@@ -564,7 +566,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 6.1 If there is a calendar but no active calendar event (unset temperature)
+      # If there is a calendar but no active calendar event (unset temperature)
       - conditions:
           - condition: trigger
             id:
@@ -600,7 +602,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 6.2 If there is an active calendar event with no temperature field
+      # If there is an active calendar event with no temperature field
       - conditions:
           - condition: trigger
             id:
@@ -632,7 +634,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 6.3 If there is an active calendar event with a temperature field that is not a number
+      # If there is an active calendar event with a temperature field that is not a number
       - conditions:
           - condition: trigger
             id:
@@ -663,7 +665,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 6.4 If there is an active calendar event with a temperature that is too low
+      # If there is an active calendar event with a temperature that is too low
       - conditions:
           - condition: or
             conditions:
@@ -703,7 +705,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 6.5 If there is an active calendar event with a temperature that is too high
+      # If there is an active calendar event with a temperature that is too high
       - conditions:
           - condition: trigger
             id:
@@ -734,7 +736,7 @@ action:
             target:
               entity_id: !input echoblock_timer
 
-      # 6.6 (Else) if there is an active calendar event with a valid temperature
+      # If there is an active calendar event with a valid temperature
       - conditions:
           - condition: trigger
             id:
