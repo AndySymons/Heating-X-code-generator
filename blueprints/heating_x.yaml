@@ -177,6 +177,7 @@ variables:
   manual_override_timer: !input manual_override_timer
   maximum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'max_temp') | min }}"
   minimum_thermostat_temperature: "{{ thermostat_controls | map('state_attr', 'min_temp') | max }}"
+  off_temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
   zone_calendar: !input zone_calendar
   zone_occupancy_sensors: !input zone_occupancy_sensors
   echoblock_duration: 5
@@ -453,7 +454,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -528,7 +529,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -551,7 +552,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -581,7 +582,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -618,7 +619,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -649,7 +650,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -689,7 +690,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
@@ -720,7 +721,7 @@ action:
         sequence:
           - service: climate.set_temperature
             data:
-              temperature: "{{ [frost_setting, minimum_thermostat_temperature] | max }}"
+              temperature: "{{ off_temperature }}"
             target:
               entity_id: !input thermostat_controls
           - service: input_text.set_value
