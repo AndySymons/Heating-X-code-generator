@@ -5,7 +5,6 @@ blueprint:
     allows temporary manual override, and optionally turns off thermostat
     if a door or window is opened, or if the zone is unoccupied for a while.
   domain: automation
-  mode: queued  # Use all triggers but avoid conflicting states
 
   ### ----------------------------------------------------------------------------
   ### INPUTS
@@ -160,6 +159,8 @@ blueprint:
       selector:
         time:
       default: "01:00:00"
+
+mode: queued  # Use all triggers but avoid conflicting states
 
 ## ----------------------------------------------------------------------------
 ## LOCAL VARIABLES
