@@ -1,0 +1,19 @@
+{% for zone in config.zones %}
+### {{ zone.heating_zone_friendly_name }}
+{{ zone.heating_zone_entity_name }}_manual_temperature:
+  name: {{ zone.heating_zone_friendly_name }} manual temperature
+  min: {{ config.temperature.min or 0}}
+  max: {{ config.temperature.max or 40 }}
+  step: {{ config.temperature.step or 1 }}
+  icon: mdi:temperature-celsius
+
+{{ zone.heating_zone_entity_name }}_event_temperature:
+  name: {{ zone.heating_zone_friendly_name }} event temperature
+  min: {{ config.temperature.min or 0}}
+  max: {{ config.temperature.max or 40 }}
+  step: {{ config.temperature.step or 1 }}
+  icon: mdi:temperature-celsius
+{% if not loop.last %}
+
+{% endif %}
+{% endfor -%}

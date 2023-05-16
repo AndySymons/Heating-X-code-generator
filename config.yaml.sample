@@ -1,0 +1,6 @@
+dashboard:
+temperature:
+zones:
+  - heating_zone_friendly_name: Bathroom
+    heating_zone_entity_name: bathroom
+    thermostat_entity_name: climate.bathroom

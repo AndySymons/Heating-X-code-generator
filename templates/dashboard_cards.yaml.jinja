@@ -1,0 +1,29 @@
+{% for zone in config.zones %}
+### {{ zone.heating_zone_friendly_name }}
+type: vertical-stack
+cards:
+  - type: custom:mushroom-title-card
+    title: {{ zone.heating_zone_entity_name }}
+  - square: false
+    columns: 2
+    type: grid
+    cards:
+      - type: custom:better-thermostat-ui-card
+        entity: climate.{{ zone.heating_zone_entity_name }}
+        eco_temperature: {{ config.dashboard.eco_temperature or 5}}
+        disable_window: {{ (config.dashboard.disable_window or True) | lower }}
+        disable_summer: {{ (config.dashboard.disable_summer or True) | lower }}
+        disable_eco: {{ (config.dashboard.disable_eco or True) | lower }}
+        disable_heat: {{ (config.dashboard.disable_heat or True) | lower }}
+        disable_off: {{ (config.dashboard.disable_off or True) | lower }}
+        set_current_as_main: {{ (config.dashboard.set_current_as_main or False) | lower }}
+      - type: markdown
+        content: |-
+          **Schedule**: {% raw %}{{{% endraw %} states('input_text.{{ zone.heating_zone_entity_name }}_event_name') {% raw %}}}{% endraw %}
+
+          **Status**: *{% raw %}{{{% endraw %} states('input_text.{{ zone.heating_zone_entity_name }}_setting_reason') {% raw %}}}{% endraw %}*
+{% if not loop.last %}
+
+---
+{% endif %}
+{% endfor %}
