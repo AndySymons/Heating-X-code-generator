@@ -1,5 +1,16 @@
 # Heating-X-code-generator
 
+**HEATING X IS SUPERCEDED by HEATING X2 and its Code Cenerator**
+- https://gist.github.com/AndySymons/3592c942ebeca2d5852f7d0c181edf55
+- https://github.com/AndySymons/Heating-X2-code-generator
+
+The release 1 Code Generator is retained for users of Heating X (release 1).
+Upgrade to release 2 is recommended, but is not upward compatible, so requires a reinstall. The two versions can co-exist on one system. 
+
+Use the code generator corresponding to your Heating X release; they cannot be mixed! 
+
+---
+
 Use Microsoft Mail Merge to create YAML files for all the template sensors and helpers required for a complete home installation of Heating X zones. 
 Microsoft Office (WORD and EXCEL) is a prerequisite (sorry I could not find a free package to do this) 
 
