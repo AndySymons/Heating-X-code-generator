@@ -1,4 +1,4 @@
-# Heating-X-code-generator
+# Heating-X-code-generator DEPRECATED
 
 **HEATING X IS SUPERCEDED by HEATING X2 and its Code Cenerator**
 - https://gist.github.com/AndySymons/3592c942ebeca2d5852f7d0c181edf55
