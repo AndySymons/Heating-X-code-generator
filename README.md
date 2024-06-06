@@ -1,13 +1,16 @@
 # Heating-X-code-generator DEPRECATED
 
-**HEATING X IS SUPERCEDED by HEATING X2 and its Code Cenerator**
-- https://gist.github.com/AndySymons/3592c942ebeca2d5852f7d0c181edf55
-- https://github.com/AndySymons/Heating-X2-code-generator
+**HEATING X IS SUPERCEDED by HEATING X2, CALENDAR SWITCH Y2, and ZONE SWITCH Z2** 
 
-The release 1 Code Generator is retained for users of Heating X (release 1).
-Upgrade to release 2 is recommended, but is not upward compatible, so requires a reinstall. The two versions can co-exist on one system. 
+**The code generator for all three is Heating XYZ Code Cenerator**
 
-Use the code generator corresponding to your Heating X release; they cannot be mixed! 
+- [Heating X2](https://gist.github.com/AndySymons/3592c942ebeca2d5852f7d0c181edf55)
+- [Calendar Switch Y2](https://gist.github.com/AndySymons/869e9a34d84c4ddc03fc762a1fc6d88b)
+- [Zone Switch Z2](https://gist.github.com/AndySymons/7e21dacb6cd76921640121d73cc62dba)
+- [Heating XYZ Code Cenerator](https://github.com/AndySymons/Heating-XYZ-code-generator)
+- The all require the [logging script](https://gist.github.com/AndySymons/105062c71de2badad995618fec0fe1ee) 
+
+The release 1 Code Generator is retained solely for existing users of Heating X (release 1). Upgrade to release 2 is recommended, but is not upward compatible, so requires a reinstall. The two versions can co-exist on one system. Use the code generator corresponding to your Heating X release; they cannot be mixed! 
 
 ---
 
