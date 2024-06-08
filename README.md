@@ -12,6 +12,7 @@
 
 The release 1 Code Generator is retained solely for existing users of Heating X (release 1). Upgrade to release 2 is recommended, but is not upward compatible, so requires a reinstall. The two versions can co-exist on one system. Use the code generator corresponding to your Heating X release; they cannot be mixed! 
 
+
 ---
 
 Use Microsoft Mail Merge to create YAML files for all the template sensors and helpers required for a complete home installation of Heating X zones. 
@@ -22,5 +23,8 @@ To get started:
 2. Unzip it. 
 3. In the resulting folder there are detailed instructions in $README on how to use the Code Generator to generate and install all the YAML code you need for even the most conplex installation. 
 
-Basically you enter the details of your installation (zones and thermostats) in the EXCEL file, then use each of the five WORD files to generate the contents of a YAML file. They each generate a whole file except the dashboard card generator, which has to be installed one card at a time.    
+Basically you enter the details of your installation (zones and thermostats) in the EXCEL file, then use each of the five WORD files to generate the contents of a YAML file. They each generate a whole file except the dashboard card generator, which has to be installed one card at a time.  
+
+
+---
 If you find the ideas in this repository useful, please [Buy Me a Coffee](https://buymeacoffee.com/andysymons)
