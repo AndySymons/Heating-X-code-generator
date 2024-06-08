@@ -23,3 +23,4 @@ To get started:
 3. In the resulting folder there are detailed instructions in $README on how to use the Code Generator to generate and install all the YAML code you need for even the most conplex installation. 
 
 Basically you enter the details of your installation (zones and thermostats) in the EXCEL file, then use each of the five WORD files to generate the contents of a YAML file. They each generate a whole file except the dashboard card generator, which has to be installed one card at a time.    
+If you find the ideas in this repository useful, please [Buy Me a Coffee](https://buymeacoffee.com/andysymons)
